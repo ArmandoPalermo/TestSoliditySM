@@ -1,0 +1,3 @@
+Contract Coin.sol:
+0x6ddd6b26d3d1a8630ff7530a1130b2c064250380
+

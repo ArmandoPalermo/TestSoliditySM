@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+	<script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+	<title>Testing Interaction with a Sepolia Ethereum Node</title>
+	<script>
+	/*ESTRAGGO LA TESTNET DALL RPC(remote procedure call) URL*/
+	const testnet = "https://rpc2.sepolia.org/"
+	/* DEFINISCO UN OGGETTO PROVIDER CHE INCLUDE DEI PROTOCOLLI DI CONNESSIONE*/
+	const web3 = new Web3(new Web3.providers.HttpProvider(testnet))
+	
+	/*DICHIARAZIONE DI UNA FUNZIONE ASINCRONA CHE STAMPA L'HASH DELL'ULTIMO BLOCCHO DELLA CHAIN*/
+	async function printLatestBlockHash() {
+  		const response = await web3.eth.getBlock()
+  		console.log(response.hash)
+		//console.log(response)
+		document.getElementById("demo").insertAdjacentHTML("beforeend","Hash ultimo blocco della blockchain: " + response.hash + "<br>")
+		
+	}
+
+	/*DEFINIZIONE DI UN'ISTANZA DI CONTRACT*/
+	const contractAddress = "0x6ddd6b26d3d1a8630ff7530a1130b2c064250380"
+
+	const contractJsonInterface =[
+	{"inputs": [],"stateMutability": "nonpayable","type": "constructor"},
+	{"inputs": [{"internalType": "uint256","name": "requested","type": "uint256"},
+	{"internalType": "uint256","name": "available","type": "uint256"}],"name": "InsufficientBalance","type": "error"},
+	{"inputs": [{"internalType": "address","name": "receiver","type": "address"},
+	{"internalType": "uint256","name": "amount","type": "uint256"}],"name": "mint","outputs": [],"stateMutability": "nonpayable","type": "function"},
+	{"inputs": [{"internalType": "address","name": "receiver","type": "address"},
+	{"internalType": "uint256","name": "amount","type": "uint256"}],"name": "send","outputs": [],"stateMutability": "nonpayable","type": "function"},
+	{"anonymous": false,"inputs": [{"indexed": false,"internalType": "address","name": "from","type": "address"},
+	{"indexed": false,"internalType": "address","name": "to","type":"address"},
+	{"indexed": false,"internalType": "uint256","name": "amount","type": "uint256"}],"name": "Sent","type": "event"},
+	{"inputs": [{"internalType": "address","name": "","type": "address"}],"name": "balances","outputs": [
+	{"internalType": "uint256","name": "","type": "uint256"}],"stateMutability": "view","type": "function"},
+	{"inputs": [],"name": "minter","outputs": [{"internalType": "address","name": "","type": "address"}],"stateMutability": "view","type": "function"}
+	]
+	
+	/*RICHIAMO I METODI DEL CONTRATTO EMESSO SULLA BLOCKCHAIN*/
+	const myContract = new web3.eth.Contract(contractJsonInterface,contractAddress)
+	
+	const samAddress = "0xc687D100075497a44A0841AFEb9E52228a3AEE35"
+	myContract.methods.balances(samAddress).call()
+	.then(result => console.log("Sam's balance: " + result ))
+
+
+	/*VERIFICO IL GAS CONSUMPTION*/
+	const minterArmAddress = "0xD509d9e2d4F3B582Fd30D0bA41b6FbdfE94c4222"
+	myContract.methods.mint(samAddress,20).estimateGas({from : minterArmAddress})
+	.then(result => console.log("gasConsumption: " + result))
+	
+	/*VERIFICO IL GAS PRICE*/
+	web3.eth.getGasPrice()
+	.then(result => console.log("Gas Price: " + result))
+	
+	/*VERIFICO IL NONCE DEL MINTER*/
+	web3.eth.getTransactionCount(minterArmAddress)
+	.then(result => console.log("Armando's nonce: " + result))
+	
+	</script>
+	 
+</head>
+<body>
+	<h2>Testing Interaction with a Sepolia Ethereum Node</h2>
+
+	<p>
+	We use this Web page to interact with Ethereum smart contracts.
+	The smart contracts are deployed on the Sepolia Testnet.
+	We will use the web3.js library.
+	Most examples will be executed from the console of the browser's Web developer tools.
+	</p>
+
+	<p id="demo">
+	</p>
+	<label for="sender">Choose the sender Address:</label><br>
+	  <select onchange="doSomething()" name="sender" id="sender" >
+		  <option value="notSelected" id="notSelected">Choose a sender</option>
+	  </select>
+	<br>
+	
+	<!--SPAZIO RISERVATO AI METODI ESEGUIBILI DALL' ENTITà SCELTA NELLA SENDERSELECT-->
+	<p id="exectutableMethod">
+	</p>
+	
+	<br>
+	<label for="receiver">Choose the receiver Address:</label><br>
+	  <select name="receiver" id="receiver">
+		  <option value="notSelected2" id="notSelected2">Choose a receiver</option>
+	  </select>
+	
+	<script>
+	/*SCRIPT PER INSERIRE GLI ELEMENTI CHE POSSONO ESEGUIRE IL METODO SEND DEL CONTRATTO EMESSO*/
+	/*METODO NON MOLTO UTILE PERCHè SI DOVREBBE FARE PER OGNI ACCOUNT, SCRITTO PER SCOPO DIDATTICO*/
+	 myContract.methods.balances(samAddress).call()
+	 .then(function(result) {
+			 	if (result != 0)
+			 	document.getElementById("sender").insertAdjacentHTML("beforeend","<option name="+ result +" value="+ samAddress +" id=" + samAddress +">"+ "Sam" + "</option>");
+			 
+			})
+	 
+	 var cc=0
+	 myContract.methods.balances(minterArmAddress).call()
+	 .then(function(result) {
+			 	if (result != 0)
+			 	document.getElementById("sender").insertAdjacentHTML("beforeend","<option name ="+ result +" value="+ minterArmAddress +" id=" + minterArmAddress +">"+ "Armando" + "</option>");
+			})
+		
+	 const mikeAddress ="0x8568DB0e9dc7104A1D6DE90b607D53BE90815992"
+	 myContract.methods.balances(mikeAddress).call()
+	 .then(function(result) {
+			 	if (result != 0)
+			 	document.getElementById("sender").insertAdjacentHTML("beforeend","<option name="+ result +" value="+ mikeAddress +" id=" + mikeAddress +">"+ "Mike" + "</option>");
+			})
+	 
+	 /*RIEMPIMENTO SECONDA SELECT(DEI POSSIBILI RECEIVER)*/
+	 document.getElementById("receiver").insertAdjacentHTML("beforeend","<option value="+ minterArmAddress +" id=" + minterArmAddress +">"+ "Armando" + "</option>")
+	 document.getElementById("receiver").insertAdjacentHTML("beforeend","<option value="+ samAddress +" id=" + samAddress +">"+ "Sam" + "</option>")
+	 document.getElementById("receiver").insertAdjacentHTML("beforeend","<option value="+ mikeAddress +" id=" + mikeAddress +">"+ "Mike" + "</option>")
+	 document.getElement
+	/*MOSTRA METODI ESEGUIBILI IN SEGUITO ALLA SCELTA DEL SENDER ADDRESS*/
+	 /*RICHIAMATA TRAMITE IL TAG ONCHANGE NELLA SELECT*/
+	 function doSomething(){
+		 const senderSelectAddress = document.getElementById("sender").value;
+		 console.log(senderSelectAddress);
+		 if (senderSelectAddress == minterArmAddress){
+			 console.log("Eccomi");
+			 document.getElementById("exectutableMethod").innerHTML =("<label for = 'sendAmount'> Insert the amount of the value you want to send</label><br>"+
+			 															"<input type = 'text' id= 'sendAmount' name = 'sendAmount' value = '0 - "
+			 															+ document.getElementById("sender").options[document.getElementById("sender").selectedIndex].getAttribute("name") +"'><button onclick ='testSend()' id ='sendButton' type ='button'>SEND</button><br>" + 
+			 														"<lable for ='mintAmount'> Insert the amount of coin you want to mint to the receiver</lable><br>" +
+			 															"<input type ='text' id='mintAmount' name ='mintAmount' value ='insert amount'><button onclick ='testMint()' id ='mintButton' type ='button''>MINT</button>");
+			 
+		 } else if( senderSelectAddress != 'notSelected'){
+			 document.getElementById("exectutableMethod").innerHTML = ("<label for = 'sendAmount'> Insert the amount of the value you want to send</label><br>"+
+			 															"<input type = 'text' id= 'sendAmount' name = 'sendAmount' value = '0 - "
+			 															+ document.getElementById("sender").options[document.getElementById("sender").selectedIndex].getAttribute("name") +"'><button onclick ='testSend()' id ='sendButton' type ='button'>SEND</button><br>");
+		 } 
+	 }
+	
+	
+	/*FUNZIONE CREAZIONE DI UNA MINT TRANSACTION*/
+	async function createMintTransaction(contractAddress, targetAddress, fromAddress, amount) {
+	 /*PRELEVO I PARAMETRI ADATTI PER CREARE LA TRANSAZIONE*/
+		const estimatedGasConsumption = await myContract.methods.mint(targetAddress, amount).estimateGas({from: fromAddress})
+		const estimatedGasPrice = await web3.eth.getGasPrice()
+  		const mintCallDataABI = await myContract.methods.mint(targetAddress, amount).encodeABI()
+	  	const transactionCount = await web3.eth.getTransactionCount(fromAddress)
+		
+		const mintTransaction = {
+			to: contractAddress,
+		    value: 0,
+		    gas: estimatedGasConsumption,
+		    gasPrice: estimatedGasPrice,
+		    nonce: transactionCount,
+		    data: mintCallDataABI
+		  }
+	
+	  	return mintTransaction
+	}
+	
+	/*FUNZIONE CHE PERMETTE DI EFFETTUARE UN MINT*/
+	async function mint(contractAddress, targetAddress, amount, minterAddress, minterPrivateKey) {
+			const targetAddressBalanceBeforeMint = await getBalance(targetAddress, minterAddress)
+	  		console.log("Target address: " + targetAddress)
+	  		console.log("Target address balance before mint() execution: " + targetAddressBalanceBeforeMint)
+
+		
+		  	const mintTransaction = await createMintTransaction(contractAddress, targetAddress, minterAddress, amount)
+		
+		 	const mintSignedTransaction = await web3.eth.accounts.signTransaction(mintTransaction, minterPrivateKey)
+		
+			web3.eth.sendSignedTransaction(mintSignedTransaction.rawTransaction)
+		    .on('receipt', function(receipt) {
+		      printReceiptInfo(receipt)
+		      getBalance(targetAddress, minterAddress).then(targetAddressBalanceAfterMint => {
+		        console.log("Target address: " + targetAddress)
+		        console.log("Target address balance after mint() execution: " + targetAddressBalanceAfterMint)
+		      })
+		    })
+	}
+	
+	
+	let senderPrivateKey
+	let receiverPrivateKey
+	
+	/*FUNZIONE INIT DI UNA MINT TRANSACTION (DA MODIFICARE PER QUELLO CHE STO FACENDO IO)*/
+	async function testMint() {
+	  const senderAddress = document.getElementById('sender').value
+	  const receiverAddress = document.getElementById('receiver').value
+	  const amount = document.getElementById('mintAmount').value
+	  
+	  senderPrivateKey = prompt("Insert the minter's private key.")
+      receiverPrivateKey = prompt("Insert the receiver's private key.")
+	  
+	  await mint(contractAddress, receiverAddress, amount, senderAddress, senderPrivateKey)
+	}
+	
+	/*FUNZIONE CHE STAMPA LE INFORMAZIONI RELATIVE ALLA TRANSAZIONE EFFETTUATA*/
+	function printReceiptInfo(receipt) {
+      if (receipt.status) {
+        console.log("Transaction status: successful")
+        console.log("Block hash: " + receipt.blockHash)
+        console.log("Block number: " + receipt.blockNumber)
+        console.log("Transaction hash: " + receipt.transactionHash)
+        console.log("Transaction index: " + receipt.transactionIndex)
+        console.log("From: " + receipt.from)
+        console.log("To: " + receipt.to)
+        console.log("Gas used: " + receipt.gasUsed)
+      }
+      else
+        console.log("Transaction status: reverted")
+    }
+    
+    /*FUNZIONE CHE PERMETTE DI OTTENERE IL 'BILANCIO' DELL'ACCOUNT CHE RICEVE I COIN*/
+    async function getBalance(targetAddress, fromAddress) {
+      const balance = await myContract.methods.balances(targetAddress).call({from: fromAddress})
+      return balance
+    }
+    
+    /*CREA UNA SEND TRANSACTION*/
+    async function createSendTransaction(contractAddress, receiverAddress, senderAddress, amount) {
+	  const estimatedGasConsumption = await myContract.methods.send(receiverAddress, amount).estimateGas({from: senderAddress})
+	  const estimatedGasPrice = await web3.eth.getGasPrice()
+	  const sendCallDataABI = await myContract.methods.send(receiverAddress, amount).encodeABI()
+	  const transactionCount = await web3.eth.getTransactionCount(senderAddress)
+	
+	  const sendTransaction = {
+	    to: contractAddress,
+	    value: 0,
+	    gas: estimatedGasConsumption,
+	    gasPrice: estimatedGasPrice,
+	    nonce: transactionCount,
+	    data: sendCallDataABI
+	  }
+	
+	  return sendTransaction
+	}
+	 
+	 /*METODO SEND EFFETTIVO*/
+	 async function send(contractAddress, receiverAddress, amount, senderAddress, senderPrivateKey) {
+	  const senderAddressBalanceBeforeSend = await getBalance(senderAddress, senderAddress)
+	  const receiverAddressBalanceBeforeSend = await getBalance(receiverAddress, senderAddress)
+	  console.log("Sender address: " + senderAddress)
+	  console.log("Sender address balance before send() execution: " + senderAddressBalanceBeforeSend)
+	  console.log("Receiver address: " + receiverAddress)
+	  console.log("Receiver address balance before send() execution: " + receiverAddressBalanceBeforeSend)
+	
+	  const sendTransaction = await createSendTransaction(contractAddress, receiverAddress, senderAddress, amount)
+	
+	  const sendSignedTransaction = await web3.eth.accounts.signTransaction(sendTransaction, senderPrivateKey)
+	
+	  web3.eth.sendSignedTransaction(sendSignedTransaction.rawTransaction)
+	    .on('receipt', function(receipt) {
+	      printReceiptInfo(receipt)
+	      getBalance(senderAddress, senderAddress).then(senderAddressBalanceAfterSend => {
+	        console.log("Sender address: " + senderAddress)
+	        console.log("Sender address balance after send() execution: " + senderAddressBalanceAfterSend)
+	      })
+	      getBalance(receiverAddress, senderAddress).then(receiverAddressBalanceAfterSend => {
+	        console.log("Receiver address: " + receiverAddress)
+	        console.log("Receiver address balance after send() execution: " + receiverAddressBalanceAfterSend)
+	      })
+	    })
+	}
+	
+	async function testSend() {
+	  const senderAddress = document.getElementById('sender').value
+	  const receiverAddress = document.getElementById('receiver').value
+	  const amount = document.getElementById('sendAmount').value
+	  
+	  senderPrivateKey = prompt("Insert the minter's private key.")
+      receiverPrivateKey = prompt("Insert the receiver's private key.")
+	
+	  await send(contractAddress, receiverAddress, amount, senderAddress, senderPrivateKey)
+	}
+	</script>
+	
+	<script>
+	/*ESEGUE getBlockNumber() E IN CASO DI SUCCESSO LO COMUNICA SULLA JAVASCRIPT CONSOLE E SUL FILE HTML*/
+	web3.eth.getBlockNumber()
+	.then(
+	function(value){document.getElementById("demo").insertAdjacentHTML("beforeend","Numero ultimo blocco della blockchain: " + value + "<br>")
+			console.log(value)
+			}
+	)
+
+	/*RICHIAMO LA FUNZIONE DICHIARATA IN PRECEDENZA*/
+	printLatestBlockHash()
+	</script>
+</body>
+</html>
